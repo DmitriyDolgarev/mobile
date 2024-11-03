@@ -26,7 +26,14 @@ class MainActivity : AppCompatActivity() {
         var nameStr: String = ""
         var sumStr: String = ""
 
-        var list: ArrayList<ExpenseModel> = ArrayList<ExpenseModel>()
+        val intent: Intent = intent
+
+        var list: ArrayList<ExpenseModel>? = intent.extras?.getParcelableArrayList<ExpenseModel>("list")
+        if (list == null)
+        {
+            list = ArrayList<ExpenseModel>()
+        }
+        //var list: ArrayList<ExpenseModel> = ArrayList<ExpenseModel>()
 
         btn.setOnClickListener {
             var text = makeText(name.text.toString(), sum.text.toString())

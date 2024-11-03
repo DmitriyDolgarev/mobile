@@ -13,6 +13,10 @@ import com.example.lr4_second.adapter.ExpenseAdapter
 import com.example.lr4_second.model.ExpenseModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
+import android.app.AlertDialog
+import android.widget.EditText
+
+
 class Expenses : AppCompatActivity() {
 
     lateinit var adapter: ExpenseAdapter
@@ -22,9 +26,6 @@ class Expenses : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_expenses)
-
-        var text = findViewById<TextView>(R.id.expensesList)
-        text.setText("Расходы:\n")
 
         val intent: Intent = intent
 
@@ -46,10 +47,6 @@ class Expenses : AppCompatActivity() {
         {
             initial(list)
         }
-        else
-        {
-            text.text = "не получило"
-        }
 
         /*
         val bundle: Bundle? = intent.extras
@@ -69,8 +66,13 @@ class Expenses : AppCompatActivity() {
             {
                 R.id.adding -> {
                     finish()
-                    startActivity(Intent(this, MainActivity::class.java))
-                    //bottomNavigationView.selectedItemId = R.id.adding
+
+                    list = adapter.getList()
+
+                    val intent: Intent = Intent(this, MainActivity::class.java)
+                    intent.putExtra("list", list)
+
+                    startActivity(intent)
                     true
                 }
                 /*
@@ -93,21 +95,58 @@ class Expenses : AppCompatActivity() {
         }
     }
 
-    /*
     override fun onContextItemSelected(item: MenuItem): Boolean {
         return when (item.itemId)
         {
             100 -> {
-                //showUpdateDialog(item.groupId)
+                showUpdateDialog(item.groupId)
                 true
             }
             101 -> {
+                adapter.deleteItem(item.groupId)
                 true
             }
+            else -> super.onContextItemSelected(item)
         }
     }
 
-     */
+    // Метод для отображения диалога обновления
+    private fun showUpdateDialog(position: Int) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Обновить расход")
+
+        val input = EditText(this)
+        input.hint = "Название,сумма"
+
+        builder.setView(input)
+
+        builder.setPositiveButton("Обновить") { dialog, _ ->
+
+            if (input.text.toString().isNotEmpty() && input.text.toString().contains(',') && input.text.toString().last() != ',') {
+
+                var newExpenseName = input.text.toString().split(",")[0]
+                var newExpenseValue = input.text.toString().split(",")[1]
+
+                if (newExpenseValue.contains(' '))
+                {
+                    newExpenseValue = newExpenseValue.replace(" ", "")
+                }
+
+                if (newExpenseValue.all { it.isDigit() })
+                {
+                    if (newExpenseName.isNotEmpty() && newExpenseValue.isNotEmpty()) {
+                        adapter.updateItem(position, newExpenseName, newExpenseValue)
+                    }
+                }
+            }
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("Закрыть") { dialog, _ ->
+            dialog.cancel()
+        }
+
+        builder.show()
+    }
 
     private fun initial(list: ArrayList<ExpenseModel>)
     {

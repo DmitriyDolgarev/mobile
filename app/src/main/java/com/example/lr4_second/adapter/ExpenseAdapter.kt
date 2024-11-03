@@ -10,28 +10,46 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.lr4_second.R
 import com.example.lr4_second.model.ExpenseModel
 
-class ExpenseAdapter: RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
+class ExpenseAdapter: RecyclerView.Adapter<ExpensesViewHolder>() {
 
-    private var expensesList = emptyList<ExpenseModel>()
+    private var expensesList = ArrayList<ExpenseModel>()
 
     class ExpenseViewHolder(view: View): RecyclerView.ViewHolder(view)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ExpenseViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ExpensesViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_expense_layout, parent, false)
-        return ExpenseViewHolder(view)
+        return ExpensesViewHolder(view)
     }
 
     override fun getItemCount(): Int {
         return expensesList.size
     }
 
-    override fun onBindViewHolder(holder: ExpenseViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ExpensesViewHolder, position: Int) {
         holder.itemView.findViewById<TextView>(R.id.expenseName).text = expensesList[position].name
         holder.itemView.findViewById<TextView>(R.id.expenseValue).text = expensesList[position].expenseValue
     }
 
+    fun updateItem(position: Int, name: String, value: String)
+    {
+        expensesList[position].name = name
+        expensesList[position].expenseValue = value
+        notifyItemChanged(position)
+    }
+
+    fun deleteItem(position: Int)
+    {
+        expensesList.removeAt(position)
+        notifyItemRemoved(position)
+    }
+
+    fun getList(): ArrayList<ExpenseModel>
+    {
+        return expensesList
+    }
+
     @SuppressLint("NotifyDataSetChanged")
-    fun setList(list: List<ExpenseModel>)
+    fun setList(list: ArrayList<ExpenseModel>)
     {
         expensesList = list
         notifyDataSetChanged()
