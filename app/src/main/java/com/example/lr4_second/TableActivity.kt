@@ -1,10 +1,10 @@
 package com.example.lr4_second
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
-import android.widget.Button
-import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -15,71 +15,49 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
+import java.util.*
+import kotlin.collections.ArrayList
 
-class MainActivity : AppCompatActivity() {
+
+class TableActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_table)
 
-        var btn = findViewById<Button>(R.id.button)
-        var name = findViewById<EditText>(R.id.nameText)
-        var sum = findViewById<EditText>(R.id.sumText)
-
-        val intent: Intent = intent
-
-        /* получение через интент
-        var list: ArrayList<ExpenseModel>? = intent.extras?.getParcelableArrayList<ExpenseModel>("list")
-        if (list == null)
-        {
-            list = ArrayList<ExpenseModel>()
-        }
-
-         */
+        var text = findViewById<TextView>(R.id.textView3)
 
         val folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val fileXls = File(folder, "table.xlsx")
+        val file = File(folder, "binary.txt")
 
-        var listFromXls: ArrayList<ExpenseModel>? = getListFromXls(fileXls)
-        var list: ArrayList<ExpenseModel>
-        if (listFromXls != null)
-        {
-            list = listFromXls
-        }
-        else
-        {
-            list = ArrayList()
-        }
-
-        btn.setOnClickListener {
-            var text = makeText(name.text.toString(), sum.text.toString())
-            var expense = ExpenseModel(name.text.toString(), sum.text.toString())
-            list.add(expense)
-
-            name.setText("")
-            sum.setText("")
-
-            Toast.makeText(this, text, Toast.LENGTH_LONG).show()
+        val data: String? = getdata(file)
+        if (data != null) {
+            text.text = "Данные из бинарного файла: " + data
+        } else {
+            text.text = "Файл пустой((("
         }
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_navigation)
 
-        bottomNavigationView.selectedItemId = R.id.adding
+        bottomNavigationView.selectedItemId = R.id.expenses
 
         bottomNavigationView.setOnItemSelectedListener { item ->
             when(item.itemId)
             {
-                R.id.expenses -> {
+                R.id.adding -> {
                     finish()
-                    val intent: Intent = Intent(this, Expenses::class.java)
-                    intent.putExtra("list", list)
+
+                    val intent: Intent = Intent(this, MainActivity::class.java)
 
                     startActivity(intent)
                     true
                 }
-                R.id.table -> {
+                R.id.expenses -> {
                     finish()
-                    startActivity(Intent(this, TableActivity::class.java))
+                    startActivity(Intent(this, Expenses::class.java))
+                    //bottomNavigationView.selectedItemId = R.id.expenses
                     true
                 }
                 R.id.camera -> {
@@ -89,7 +67,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> false
             }
-
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -98,27 +75,29 @@ class MainActivity : AppCompatActivity() {
             insets
         }
     }
-    fun makeText(name: String, sum: String): String
-    {
-        var text = ""
-        var sumArr = sum.toCharArray()
 
-        if ((name == "") || (sum == ""))
-        {
-            text = "Заполните поля ввода!"
-        }
-        else
-        {
-            if (sumArr[0] == '-')
-            {
-                text = "Сумма должна быть положительной!"
+    private fun getdata(myfile: File): String? {
+        var fileInputStream: FileInputStream? = null
+        try {
+            fileInputStream = FileInputStream(myfile)
+            var i = -1
+            val buffer = StringBuffer()
+            while (fileInputStream.read().also { i = it } != -1) {
+                buffer.append(i.toChar())
             }
-            else
-            {
-                text = "Добавлено: " + name + ", " + sum
+            return buffer.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            if (fileInputStream != null) {
+                try {
+                    fileInputStream.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
             }
         }
-        return text
+        return null
     }
 
     private fun getListFromXls(myFile: File): ArrayList<ExpenseModel>?
@@ -146,5 +125,16 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show()
             list
         }
+    }
+
+    private fun listToString(list: ArrayList<ExpenseModel>): String
+    {
+        var result = ""
+
+        for (expense: ExpenseModel in list)
+        {
+            result += expense.name + ": " + expense.expenseValue + ", "
+        }
+        return result
     }
 }

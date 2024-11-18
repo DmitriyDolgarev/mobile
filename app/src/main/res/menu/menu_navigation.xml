@@ -11,4 +11,14 @@
         android:title="Расходы"
         android:icon="@drawable/expenses"/>
 
+    <item
+        android:id="@+id/table"
+        android:title="Таблица"
+        android:icon="@drawable/baseline_airplay_24"/>
+
+    <item
+        android:id="@+id/camera"
+        android:title="Камера"
+        android:icon="@drawable/baseline_add_a_photo_24"/>
+
 </menu>
