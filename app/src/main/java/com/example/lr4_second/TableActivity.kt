@@ -10,6 +10,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.asLiveData
+import com.example.lr4_second.db.MainDB
 import com.example.lr4_second.model.ExpenseModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.apache.poi.ss.usermodel.WorkbookFactory
@@ -29,6 +31,18 @@ class TableActivity : AppCompatActivity() {
 
         var text = findViewById<TextView>(R.id.textView3)
 
+        var textOfList = ""
+
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+            text.text = ""
+            itList.forEach{
+                text.append(it.expenseName + ": " + it.expenseValue + ";\n")
+            }
+        }
+
+        /*
         val folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val file = File(folder, "binary.txt")
 
@@ -38,6 +52,8 @@ class TableActivity : AppCompatActivity() {
         } else {
             text.text = "Файл пустой((("
         }
+
+         */
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_navigation)
 

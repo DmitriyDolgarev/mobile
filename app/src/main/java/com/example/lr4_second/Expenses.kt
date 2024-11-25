@@ -17,8 +17,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.asLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lr4_second.adapter.ExpenseAdapter
+import com.example.lr4_second.db.MainDB
 import com.example.lr4_second.model.ExpenseModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
@@ -42,17 +44,28 @@ class Expenses : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_expenses)
 
-        var makeXlsxBtn = findViewById<Button>(R.id.makeXlsx)
-
         val intent: Intent = intent
 
-        var list: ArrayList<ExpenseModel>? = intent.extras?.getParcelableArrayList<ExpenseModel>("list")
-        var listStr: String = ""
+        //var list: ArrayList<ExpenseModel>? = intent.extras?.getParcelableArrayList<ExpenseModel>("list")
+        var list: ArrayList<ExpenseModel> = ArrayList()
 
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+            list = ArrayList()
+            itList.forEach{
+                var expense: ExpenseModel = ExpenseModel(it.expenseName, it.expenseValue)
+                list.add(expense)
+            }
+            initial(list)
+        }
+
+        //initial(list)
+
+        /*
         if (list != null)
         {
             initial(list)
-            listStr = listToString(list)
         }
         else
         {
@@ -64,8 +77,14 @@ class Expenses : AppCompatActivity() {
             {
                 list = ArrayList()
             }
+
+            initial(list)
+            listStr = listToString(list)
         }
 
+         */
+
+        /*
         makeXlsxBtn.setOnClickListener{
             // Проверяем наличие разрешения
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -87,6 +106,8 @@ class Expenses : AppCompatActivity() {
                 Toast.makeText(this, "Список сохранен!", Toast.LENGTH_SHORT).show()
             }
         }
+
+         */
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_navigation)
 
@@ -145,7 +166,7 @@ class Expenses : AppCompatActivity() {
                 true
             }
             101 -> {
-                adapter.deleteItem(item.groupId)
+                adapter.deleteItem(item.groupId, this)
                 true
             }
             else -> super.onContextItemSelected(item)
@@ -177,7 +198,7 @@ class Expenses : AppCompatActivity() {
                 if (newExpenseValue.all { it.isDigit() })
                 {
                     if (newExpenseName.isNotEmpty() && newExpenseValue.isNotEmpty()) {
-                        adapter.updateItem(position, newExpenseName, newExpenseValue)
+                        adapter.updateItem(position, newExpenseName, newExpenseValue, this)
                     }
                 }
             }

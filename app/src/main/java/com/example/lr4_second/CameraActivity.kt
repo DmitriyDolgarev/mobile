@@ -10,13 +10,20 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.asLiveData
+import com.example.lr4_second.db.MainDB
+import com.example.lr4_second.model.ExpenseModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.io.File
 import java.io.FileOutputStream
@@ -29,10 +36,13 @@ class CameraActivity : AppCompatActivity() {
 
     private val requestCodeTakePhoto = 1
     private lateinit var photoImageView: ImageView
+    private lateinit var spinner: Spinner
 
     private var savedImageUri: Uri? = null
     private val SHARED_PREFS_NAME = "my_prefs"
     private val SAVED_IMAGE_URI_KEY = "saved_image_uri"
+    private lateinit var listOfItems: ArrayList<String>
+    private lateinit var selectedItem: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +50,22 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
 
         photoImageView = findViewById(R.id.photoImageView)
+
+        spinner = findViewById<Spinner>(R.id.spinner)
+        listOfItems = ArrayList()
+        loadExpenses()
+        selectedItem = ""
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedItem = listOfItems.get(position)
+                makeImage()
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // do nothing
+            }
+        }
+
 
         var takePhotoBtn = findViewById<Button>(R.id.button2)
         takePhotoBtn.setOnClickListener{
@@ -49,6 +75,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+        /*
         // Загрузка URI из SharedPreferences
         val sharedPrefs = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
         val savedUriString = sharedPrefs.getString(SAVED_IMAGE_URI_KEY, null)
@@ -57,6 +84,8 @@ class CameraActivity : AppCompatActivity() {
         savedImageUri?.let { uri ->
             photoImageView.setImageURI(uri)
         }
+
+         */
 
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_navigation)
@@ -129,10 +158,20 @@ class CameraActivity : AppCompatActivity() {
 
             var imageUri: Uri? = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
 
+            //Сохранение в базу данных
+            val db = MainDB.getDB(this)
+            Thread{
+                db.getDao().updateExpenseImage(selectedItem, imageUri.toString())
+            }.start()
+
+
+            /*
             val sharedPrefs = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
             val editor = sharedPrefs.edit()
             editor.putString(SAVED_IMAGE_URI_KEY, imageUri.toString())
             editor.apply()
+
+             */
 
             if (imageUri != null)
             {
@@ -158,4 +197,46 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadExpenses()
+    {
+        var expenses = ArrayList<String>()
+        var result = ArrayList<String>()
+
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+            expenses = ArrayList()
+            itList.forEach{
+                expenses.add(it.expenseName)
+            }
+
+            listOfItems = expenses
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, expenses)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinner.adapter = adapter
+        }
+    }
+    private fun makeImage()
+    {
+        //Загрузка URI из базы данных
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+
+            itList.forEach{
+                if (it.expenseName == selectedItem)
+                {
+                    if (it.imageUri != null)
+                    {
+                        var uri = Uri.parse(it.imageUri)
+                        photoImageView.setImageURI(uri)
+                    }
+                    else
+                    {
+                        photoImageView.setImageURI(null)
+                    }
+                }
+            }
+        }
+    }
 }

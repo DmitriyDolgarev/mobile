@@ -1,6 +1,7 @@
 package com.example.lr4_second.adapter
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import android.widget.TextView
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lr4_second.R
+import com.example.lr4_second.db.MainDB
 import com.example.lr4_second.model.ExpenseModel
 
 class ExpenseAdapter: RecyclerView.Adapter<ExpensesViewHolder>() {
@@ -30,16 +32,29 @@ class ExpenseAdapter: RecyclerView.Adapter<ExpensesViewHolder>() {
         holder.itemView.findViewById<TextView>(R.id.expenseValue).text = expensesList[position].expenseValue
     }
 
-    fun updateItem(position: Int, name: String, value: String)
+    fun updateItem(position: Int, newName: String, newValue: String, context: Context)
     {
-        expensesList[position].name = name
-        expensesList[position].expenseValue = value
+        val db = MainDB.getDB(context)
+        var name = expensesList.get(position).expName
+        Thread{
+            db.getDao().updateItem(name, newName, newValue)
+        }.start()
+
+        expensesList[position].name = newName
+        expensesList[position].expenseValue = newValue
         notifyItemChanged(position)
     }
 
-    fun deleteItem(position: Int)
+    fun deleteItem(position: Int, context: Context)
     {
+        val db = MainDB.getDB(context)
+        var name = expensesList.get(position).expName
+        Thread{
+            db.getDao().deleteItemByName(name)
+        }.start()
+
         expensesList.removeAt(position)
+
         notifyItemRemoved(position)
     }
 

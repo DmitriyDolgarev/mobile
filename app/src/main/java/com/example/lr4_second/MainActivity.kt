@@ -10,6 +10,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.asLiveData
+import com.example.lr4_second.db.ExpenseItem
+import com.example.lr4_second.db.MainDB
 import com.example.lr4_second.model.ExpenseModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.apache.poi.ss.usermodel.WorkbookFactory
@@ -27,6 +30,19 @@ class MainActivity : AppCompatActivity() {
         var sum = findViewById<EditText>(R.id.sumText)
 
         val intent: Intent = intent
+        /*db
+        var listText: String = ""
+        var listFromDB: ArrayList<ExpenseModel> = ArrayList()
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+            listFromDB = ArrayList()
+            itList.forEach{
+                var expense: ExpenseModel = ExpenseModel(it.expenseName, it.expenseValue)
+                listFromDB.add(expense)
+            }
+        }
+         */
 
         /* получение через интент
         var list: ArrayList<ExpenseModel>? = intent.extras?.getParcelableArrayList<ExpenseModel>("list")
@@ -37,11 +53,27 @@ class MainActivity : AppCompatActivity() {
 
          */
 
+        /*
         val folder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val fileXls = File(folder, "table.xlsx")
 
         var listFromXls: ArrayList<ExpenseModel>? = getListFromXls(fileXls)
-        var list: ArrayList<ExpenseModel>
+
+         */
+
+        var list: ArrayList<ExpenseModel> = ArrayList()
+
+        val db = MainDB.getDB(this)
+        db.getDao().getAllItems().asLiveData().observe(this)
+        { itList ->
+            list = ArrayList()
+            itList.forEach{
+                var expense: ExpenseModel = ExpenseModel(it.expenseName, it.expenseValue)
+                list.add(expense)
+            }
+        }
+
+        /*
         if (listFromXls != null)
         {
             list = listFromXls
@@ -51,9 +83,20 @@ class MainActivity : AppCompatActivity() {
             list = ArrayList()
         }
 
+         */
+
         btn.setOnClickListener {
             var text = makeText(name.text.toString(), sum.text.toString())
             var expense = ExpenseModel(name.text.toString(), sum.text.toString())
+
+            /*db
+
+             */
+            val item = ExpenseItem(null, name.text.toString(), sum.text.toString(), null)
+            Thread{
+                db.getDao().insertItem(item)
+            }.start()
+
             list.add(expense)
 
             name.setText("")
