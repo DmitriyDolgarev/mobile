@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.MediaStore.Images
+import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -22,8 +23,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.asLiveData
+import androidx.recyclerview.widget.RecyclerView
+import com.example.lr4_second.adapter.ExpenseAdapter
+import com.example.lr4_second.adapter.ImageAdapter
 import com.example.lr4_second.db.MainDB
+import com.example.lr4_second.db.Photos
 import com.example.lr4_second.model.ExpenseModel
+import com.example.lr4_second.model.ImageModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.io.File
 import java.io.FileOutputStream
@@ -35,31 +41,42 @@ import java.util.Objects
 class CameraActivity : AppCompatActivity() {
 
     private val requestCodeTakePhoto = 1
-    private lateinit var photoImageView: ImageView
+    //private lateinit var photoImageView: ImageView
     private lateinit var spinner: Spinner
 
     private var savedImageUri: Uri? = null
     private val SHARED_PREFS_NAME = "my_prefs"
     private val SAVED_IMAGE_URI_KEY = "saved_image_uri"
+
     private lateinit var listOfItems: ArrayList<String>
+    private lateinit var idOfExpenses: HashMap<String, Int>
+
     private lateinit var selectedItem: String
+
+    private lateinit var imageList: ArrayList<ImageModel>
+
+    lateinit var adapter: ImageAdapter
+    lateinit var recyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_camera)
 
-        photoImageView = findViewById(R.id.photoImageView)
+        //photoImageView = findViewById(R.id.photoImageView)
 
         spinner = findViewById<Spinner>(R.id.spinner)
         listOfItems = ArrayList()
+        idOfExpenses = HashMap()
+        imageList = ArrayList()
+
         loadExpenses()
         selectedItem = ""
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedItem = listOfItems.get(position)
-                makeImage()
+                makeListOfImages()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 // do nothing
@@ -140,11 +157,44 @@ class CameraActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == requestCodeTakePhoto && resultCode == Activity.RESULT_OK) {
             val imageBitmap = data?.extras?.get("data") as Bitmap
-            photoImageView.setImageBitmap(imageBitmap)
+            //photoImageView.setImageBitmap(imageBitmap)
 
             // Сохранение фотографии и обновление пути к файлу
             savePhoto(imageBitmap)
         }
+    }
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId)
+        {
+            102 -> {
+                adapter.deleteItem(item.groupId, this)
+                true
+            }
+            else -> super.onContextItemSelected(item)
+        }
+    }
+    private fun makeListOfImages()
+    {
+        val db = MainDB.getDB(this)
+        db.getDao().getExpensePhotos(selectedItem).asLiveData().observe(this)
+        { itList ->
+            imageList = ArrayList()
+            itList.forEach{
+                var image = ImageModel(it.id, it.imageUri)
+                imageList.add(image)
+            }
+
+            initial(imageList)
+        }
+    }
+
+    private fun initial(list: ArrayList<ImageModel>)
+    {
+        recyclerView = findViewById(R.id.imgRecView)
+        adapter = ImageAdapter()
+        recyclerView.adapter = adapter
+
+        adapter.setList(list)
     }
 
     private fun savePhoto(bitmap: Bitmap) {
@@ -160,10 +210,11 @@ class CameraActivity : AppCompatActivity() {
 
             //Сохранение в базу данных
             val db = MainDB.getDB(this)
+            var photo = Photos(null, idOfExpenses.get(selectedItem)!!, imageUri.toString())
             Thread{
-                db.getDao().updateExpenseImage(selectedItem, imageUri.toString())
+                //db.getDao().updateExpenseImage(selectedItem, imageUri.toString())
+                db.getDao().insertPhoto(photo)
             }.start()
-
 
             /*
             val sharedPrefs = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
@@ -189,6 +240,8 @@ class CameraActivity : AppCompatActivity() {
             {
                 Toast.makeText(this, "Фото не сохранилось(((", Toast.LENGTH_SHORT).show()
             }
+
+            makeListOfImages()
         }
         catch (e: Exception)
         {
@@ -200,17 +253,20 @@ class CameraActivity : AppCompatActivity() {
     private fun loadExpenses()
     {
         var expenses = ArrayList<String>()
-        var result = ArrayList<String>()
 
         val db = MainDB.getDB(this)
         db.getDao().getAllItems().asLiveData().observe(this)
         { itList ->
             expenses = ArrayList()
+            var map: HashMap<String, Int> = HashMap()
             itList.forEach{
                 expenses.add(it.expenseName)
+                map.put(it.expenseName, it.id!!)
             }
 
             listOfItems = expenses
+            idOfExpenses = map
+
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, expenses)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             spinner.adapter = adapter
@@ -223,6 +279,7 @@ class CameraActivity : AppCompatActivity() {
         db.getDao().getAllItems().asLiveData().observe(this)
         { itList ->
 
+            /*
             itList.forEach{
                 if (it.expenseName == selectedItem)
                 {
@@ -237,6 +294,8 @@ class CameraActivity : AppCompatActivity() {
                     }
                 }
             }
+
+             */
         }
     }
 }

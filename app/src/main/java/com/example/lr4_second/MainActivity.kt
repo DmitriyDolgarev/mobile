@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
             /*db
 
              */
-            val item = ExpenseItem(null, name.text.toString(), sum.text.toString(), null)
+            val item = ExpenseItem(null, name.text.toString(), sum.text.toString())
             Thread{
                 db.getDao().insertItem(item)
             }.start()
